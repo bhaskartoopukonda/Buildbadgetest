@@ -1,0 +1,63 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: openjdk11
+     
+  pre_build:
+    commands:
+     
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - REPOSITORY_URI=$TemplateURL
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+     # - echo Nothing to do in the pre_build phase...
+      #- mvn package sonar:sonar -Dsonar.host.url=$Host -Dsonar.login=$Login -Dsonar.login=$Username -Dsonar.password=$Password -Dsonar.branch.name=$Branch -Dsonar.projectKey=$Project
+      #- sleep 5
+      #- curl -u $Username:$Password $Host/api/qualitygates/project_status?projectKey=org.example:messageUtil >result.json
+      #- cat result.json
+      #- OUTPUT="$(jq -r '.projectStatus.status' result.json)"
+      #- echo "${OUTPUT}"
+      #- |
+       # if [ "$OUTPUT" != "OK" ] ;
+       # then  
+        #{
+         #echo "Build failed due to SonarQube quality gate failure";
+          #exit 1;
+         #}
+        #fi      
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...         
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:latest
+      # - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+      #- echo Build started on `date`
+      #- mvn install
+      #- snyk auth $SNYK_AUTH_TOKEN
+      - echo `pwd`
+      - ls -ltr
+      #- chmod 755 ./Dockerfile
+      - ls -ltr
+      #- snyk test --show-vulnerable-paths=false
+      #- snyk test --docker 202771655335.dkr.ecr.us-east-1.amazonaws.com/los-poc:latest --file=Dockerfile
+      
+      #- snyk test --docker $REPOSITORY_URI:latest 
+      #- snyk monitor --docker $REPOSITORY_URI:latest 
+      #- npm install -g snyk
+      #- snyk test 
+      #- snyk monitor
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      
+     
+artifacts:
+  files:
+    - target/messageUtil-1.0.jar
